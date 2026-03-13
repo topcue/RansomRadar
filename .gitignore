@@ -3,3 +3,11 @@ env/venv
 result/
 
 code/__pycache__
+
+helper/PARSER/.vs/
+helper/PARSER/**/bin/
+helper/PARSER/**/obj/
+*.pdb
+*.suo
+*.wsuo
+*.vsidx
