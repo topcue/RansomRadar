@@ -1,0 +1,32 @@
+Set-Location C:\Users\user\workspace\RansomRadar
+.\scripts\activate_venv.ps1
+
+$Project = "C:\Users\user\workspace\RansomRadar"
+$Etl = Join-Path $Project "dataset\raw\benign\benign_test_01.etl"
+$Out = Join-Path $Project "pmu_test\wpa_out"
+$TestDir = Join-Path $Project "tmp_benign_io"
+
+Get-Item .\monitor\record_guest_test.wprp
+Get-Content .\monitor\record_guest_test.wprp
+
+New-Item -ItemType Directory -Force (Split-Path $Etl -Parent) | Out-Null
+New-Item -ItemType Directory -Force $Out | Out-Null
+New-Item -ItemType Directory -Force $TestDir | Out-Null
+
+Remove-Item "$Out\*" -Force -ErrorAction SilentlyContinue
+Remove-Item $Etl -Force -ErrorAction SilentlyContinue
+
+wpr -cancel
+wpr -start .\monitor\record_guest_test.wprp -filemode
+
+1..100 | ForEach-Object {
+    $p = Join-Path $TestDir ("file_{0:D4}.txt" -f $_)
+    "hello $_ $(Get-Date -Format o)" | Set-Content -Path $p
+}
+
+wpr -stop $Etl
+Get-Item $Etl | Format-List FullName, Length, LastWriteTime
+
+wpaexporter.exe /tti -i $Etl -profile .\helper\parse.wpaProfile -outputfolder $Out
+Get-ChildItem $Out
+Get-Content "$Out\PMC_Summary_Table_test.csv" -TotalCount 20
