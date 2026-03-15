@@ -11,3 +11,5 @@ helper/PARSER/**/obj/
 *.suo
 *.wsuo
 *.vsidx
+
+monitor/IOMonitor/minifilter_helper/target/
