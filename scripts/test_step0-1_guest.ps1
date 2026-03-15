@@ -46,6 +46,7 @@ $TestDir      = Join-Path $Project "tmp_benign_io"
 $Profile      = Join-Path $Project "monitor\record_guest_test.wprp"
 $ParseProfile = Join-Path $Project "helper\parse.wpaProfile"
 $Step0Log     = Join-Path $Project "step0_run_test.log"
+$Step1Log     = Join-Path $Project "step1_run_test.log"
 
 $Etl          = Join-Path $RawBenign "$Sample.etl"
 $HpcCsv       = Join-Path $HpcBenign "$Sample.csv"
@@ -93,7 +94,7 @@ wpr -start $Profile -filemode
 
 Write-Host ""
 Write-Host "[PMU collection started]"
-Write-Host "You have 10 seconds to perform benign activity."
+Write-Host "You have 30 seconds to perform benign activity."
 Write-Host "Examples: Explorer navigation, file open/copy, launching apps."
 Write-Host ""
 
@@ -106,7 +107,7 @@ $job = Start-Job -ScriptBlock {
     }
 } -ArgumentList $TestDir
 
-for ($sec = 10; $sec -ge 1; $sec--) {
+for ($sec = 30; $sec -ge 1; $sec--) {
     Write-Host ("Stopping in {0} second(s)..." -f $sec)
     Start-Sleep -Seconds 1
 }
@@ -156,7 +157,13 @@ Remove-Item $RawStart -Force -ErrorAction SilentlyContinue
 
 Show-Section "7. Run step1 compatibility test (1s / 100ms)"
 
-python -c "import sys; sys.path.append(r'.\code'); from step1_extract_feature import calculate_1s_feature, calculate_100ms_feature; calculate_1s_feature(r'$HpcCsv', r'$Feature1sCsv'); calculate_100ms_feature(r'$HpcCsv', r'$Feature100Csv')"
+# python -c "import sys; sys.path.append(r'.\code'); from step1_extract_feature import calculate_1s_feature, calculate_100ms_feature; calculate_1s_feature(r'$HpcCsv', r'$Feature1sCsv'); calculate_100ms_feature(r'$HpcCsv', r'$Feature100Csv')"
+
+Remove-Item $Step1Log -Force -ErrorAction SilentlyContinue
+cmd /c "python .\code\step1_extract_feature.py 1> `"$Step1Log`" 2>&1"
+
+Write-Host "[step1 log tail]"
+Get-Content $Step1Log -Tail 100
 
 Assert-PathExists $Feature1sCsv   "1s feature CSV was not created."
 Assert-PathExists $Feature100Csv  "100ms feature CSV was not created."
