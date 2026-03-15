@@ -7,15 +7,44 @@ import pandas as pd
 import numpy as np
 import pandas as pd
 
+#! =============================================================================
+EXPECTED_COUNTERS = [
+    'InstructionsRetiredFixed',
+    'BranchInstructionRetired',
+    'BranchMispredictsRetired',
+    'LLCReference',
+    'LLCMisses',
+]
+
+COUNTER_ALIAS = {
+    'InstructionRetired': 'InstructionsRetiredFixed',
+    'BranchInstructions': 'BranchInstructionRetired',
+    'BranchMispredictions': 'BranchMispredictsRetired',
+    'CacheMisses': 'LLCMisses',
+}
+
+def normalize_hpc_counter_names(df):
+    df = df.copy()
+    df['Counter'] = df['Counter'].replace(COUNTER_ALIAS)
+    return df
+
+def ensure_expected_counter_columns(df):
+    for col in EXPECTED_COUNTERS:
+        if col not in df.columns:
+            df[col] = 0
+    return df
+
+#! =============================================================================
 
 # calculate features for every second
-def calculate_1s_feature(filepath, targetpath):  
+def calculate_1s_feature(filepath, targetpath):
     print(f'extract 1s feature for {targetpath}')
 
     if os.path.exists(targetpath):
         return
 
     df = read_hpc_file(filepath)
+    df = normalize_hpc_counter_names(df)
 
     result_df = pd.DataFrame(columns=[
         'Sample',
@@ -33,6 +62,8 @@ def calculate_1s_feature(filepath, targetpath):
 
     counter_one_hot = pd.get_dummies(df['Counter'])
     df = pd.concat([df, counter_one_hot], axis=1)
+    df = ensure_expected_counter_columns(df)
+
     df['Timestamp'] = df['Timestamp'].astype(np.float64)
     df['Second'] = (df['Timestamp'] / 10000000).astype(np.int64)
     df['100ms'] = (df['Timestamp'] / 1000000).astype(np.int64)
@@ -49,6 +80,26 @@ def calculate_1s_feature(filepath, targetpath):
             llcref_lst = []
             cnt = 0
 
+            # for _, sub_df in second_df.groupby('100ms'):
+            #     try:
+            #         instructions = sub_df['InstructionsRetiredFixed'].sum()
+            #         branchinstructions = sub_df['BranchInstructionRetired'].sum()
+            #         branchmispredicts = sub_df['BranchMispredictsRetired'].sum()
+            #         llcrefs = sub_df['LLCReference'].sum()
+            #         llcmisses = sub_df['LLCMisses'].sum()
+            #         if instructions == 0 or branchinstructions == 0 or llcrefs == 0:
+            #             continue
+            #         branchinstructionrate_lst.append(branchinstructions / instructions)
+            #         branchmispredictsrate_lst.append(branchmispredicts / branchinstructions)
+            #         llcrefrate_lst.append(llcrefs / instructions)
+            #         llcmissrate_lst.append(llcmisses / llcrefs)
+            #         instruction_lst.append(instructions)
+            #         branchinstruction_lst.append(branchinstructions)
+            #         llcref_lst.append(llcrefs)
+            #         cnt += 1
+            #     except:
+            #         pass
+
             for _, sub_df in second_df.groupby('100ms'):
                 try:
                     instructions = sub_df['InstructionsRetiredFixed'].sum()
@@ -56,17 +107,37 @@ def calculate_1s_feature(filepath, targetpath):
                     branchmispredicts = sub_df['BranchMispredictsRetired'].sum()
                     llcrefs = sub_df['LLCReference'].sum()
                     llcmisses = sub_df['LLCMisses'].sum()
-                    if instructions == 0 or branchinstructions == 0 or llcrefs == 0:
+
+                    if instructions == 0:
                         continue
-                    branchinstructionrate_lst.append(branchinstructions / instructions)
-                    branchmispredictsrate_lst.append(branchmispredicts / branchinstructions)
-                    llcrefrate_lst.append(llcrefs / instructions)
-                    llcmissrate_lst.append(llcmisses / llcrefs)
+
+                    # branch-related rates
+                    branchinstructionrate = branchinstructions / instructions
+
+                    if branchinstructions > 0:
+                        branchmispredictsrate = branchmispredicts / branchinstructions
+                    else:
+                        branchmispredictsrate = 0.0
+
+                    # LLC-related rates
+                    llcrefrate = llcrefs / instructions
+
+                    if llcrefs > 0:
+                        llcmissrate = llcmisses / llcrefs
+                    else:
+                        llcmissrate = 0.0
+
+                    branchinstructionrate_lst.append(branchinstructionrate)
+                    branchmispredictsrate_lst.append(branchmispredictsrate)
+                    llcrefrate_lst.append(llcrefrate)
+                    llcmissrate_lst.append(llcmissrate)
+
                     instruction_lst.append(instructions)
                     branchinstruction_lst.append(branchinstructions)
                     llcref_lst.append(llcrefs)
                     cnt += 1
-                except:
+                except Exception as e:
+                    print(f'error in 1s subwindow: {e}')
                     pass
 
             if cnt == 0:
@@ -84,7 +155,7 @@ def calculate_1s_feature(filepath, targetpath):
                 'std_llcrefrate': np.std(llcrefrate_lst),
                 'avg_llcmissrate': np.mean(llcmissrate_lst),
                 'std_llcmissrate': np.std(llcmissrate_lst),
-            } 
+            }
 
     result_df.to_csv(targetpath)
 
@@ -95,8 +166,9 @@ def calculate_100ms_feature(filepath, targetpath):
 
     if os.path.exists(targetpath):
         return
-    
+
     df = read_hpc_file(filepath)
+    df = normalize_hpc_counter_names(df)
 
     result_df = pd.DataFrame(columns=[
         'Sample',
@@ -112,6 +184,8 @@ def calculate_100ms_feature(filepath, targetpath):
 
     counter_one_hot = pd.get_dummies(df['Counter'])
     df = pd.concat([df, counter_one_hot], axis=1)
+    df = ensure_expected_counter_columns(df)
+
     df['100ms'] = (df['Timestamp'] / 1000000).astype(np.int64)
     sample = df['Sample'].iloc[0]
 
@@ -133,12 +207,12 @@ def calculate_100ms_feature(filepath, targetpath):
 
 
 # calculate feature for lstm
-def calculate_lstm_feature(irp_path, hpc_path, output_path, label):  
+def calculate_lstm_feature(irp_path, hpc_path, output_path, label):
     print(f'calculate lstm feature for {output_path}')
 
     if os.path.exists(output_path):
         return
-      
+
     feature_cols = ['sample', 'process', 'starttime', 'label']
     for i in range(10):
         feature_cols.append(f'read_{i}')
@@ -154,13 +228,13 @@ def calculate_lstm_feature(irp_path, hpc_path, output_path, label):
         feature_cols.append(f'llcmisses_{i}')
 
     feature_df = pd.DataFrame(columns=feature_cols)
-    
+
     # get sample name
     sample = os.path.basename(irp_path).split('.')[0]
-    
+
     try:
         irp_df = read_irp_file(irp_path)
-        hpc_df = pd.read_csv(hpc_path, index_col=0) 
+        hpc_df = pd.read_csv(hpc_path, index_col=0)
 
         hpc_df['Second'] = hpc_df['fromtime'].apply(lambda x: int(x / 1e7))
         irp_df['file_basename'] = irp_df['file_name'].apply(lambda x: x.split('.')[0].lower())
@@ -168,7 +242,7 @@ def calculate_lstm_feature(irp_path, hpc_path, output_path, label):
         # consider every process separately
         for (sample, process), sub_df in hpc_df.groupby(['Sample', 'Process']):
             SecondList = list(sub_df['Second'].unique())
-            
+
             # accessed files
             read_files = set()
 
@@ -217,7 +291,7 @@ def main():
             calculate_1s_feature(f'{HPC_ROOT_path}\\{label}\\{sample}.csv', f'{FEATURE_PATH}\\1s\\{label}\\{sample}.csv')
 
             calculate_100ms_feature(f'{HPC_ROOT_path}\\{label}\\{sample}.csv', f'{FEATURE_PATH}\\100ms\\{label}\\{sample}.csv')
-            
+
             calculate_lstm_feature(f'{IRP_ROOT_PATH}\\{label}\\{sample}.txt', f'{FEATURE_PATH}\\100ms\\{label}\\{sample}.csv', f'{FEATURE_PATH}\\lstm\\{label}\\{sample}.csv', label)
 
 
