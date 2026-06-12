@@ -1,4 +1,4 @@
-PROJECT_PATH = r'C:\Users\user\workspace\RansomRadar'
+PROJECT_PATH = r'C:\Users\topcue\workspace\RansomRadar-topcue'
 
 RAW_ROOT_PATH = rf'{PROJECT_PATH}\dataset\raw'
 HPC_ROOT_path = rf'{PROJECT_PATH}\dataset\hpcdata'
