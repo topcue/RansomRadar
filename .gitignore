@@ -1,5 +1,14 @@
 dataset/
 env/
+.tools/
+helper/PARSER/.vs/
+helper/PARSER/PARSER/bin/
+helper/PARSER/PARSER/obj/
+helper/PARSER/packages/
+*.csproj.user
+*.suo
+*.vsidx
+*.pdb
 
 helper/PARSER/PARSER/bin/
 helper/PARSER/PARSER/obj/
