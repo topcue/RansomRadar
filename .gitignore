@@ -5,6 +5,7 @@ helper/PARSER/.vs/
 helper/PARSER/PARSER/bin/
 helper/PARSER/PARSER/obj/
 helper/PARSER/packages/
+monitor/IOMonitor/minifilter_helper/target/
 *.csproj.user
 *.suo
 *.vsidx
