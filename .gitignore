@@ -1,4 +1,6 @@
 dataset/
+result/
+code/__pycache__/
 env/
 .tools/
 helper/PARSER/.vs/
