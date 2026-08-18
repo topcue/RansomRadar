@@ -16,3 +16,4 @@ monitor/IOMonitor/IRPCollectionDrv/user/ARM64/
 *.suo
 *.vsidx
 *.pdb
+.tmp/

@@ -3,8 +3,8 @@
 
 #define VER_FILETYPE                VFT_APP
 #define VER_FILESUBTYPE             VFT2_UNKNOWN
-#define VER_FILEDESCRIPTION_STR     "MiniSpy Control Program"
-#define VER_INTERNALNAME_STR        "MiniSpy.exe"
-#define VER_ORIGINALFILENAME_STR    "MiniSpy.exe"
+#define VER_FILEDESCRIPTION_STR     "RansomRadar IRP Control Program"
+#define VER_INTERNALNAME_STR        "RansomRadarIrpCtl.exe"
+#define VER_ORIGINALFILENAME_STR    "RansomRadarIrpCtl.exe"
 
 #include "common.ver"

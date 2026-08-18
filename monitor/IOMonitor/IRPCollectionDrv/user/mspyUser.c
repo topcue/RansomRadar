@@ -40,7 +40,7 @@ _Analysis_mode_(_Analysis_code_type_user_code_)
 #define CMDLINE_SIZE              256
 #define NUM_PARAMS                40
 
-#define MINISPY_NAME            L"MiniSpy"
+#define MINISPY_NAME            L"RansomRadarIrp"
 
 DWORD
 InterpretCommand (
@@ -224,7 +224,7 @@ Return Value:
     context.ShutDown = CreateSemaphore( NULL,
                                         0,
                                         1,
-                                        L"MiniSpy shut down" );
+                                        L"RansomRadarIrp shut down" );
     context.CleaningUp = FALSE;
     context.LogToFile = FALSE;
     context.LogToScreen = FALSE;        //don't start logging yet

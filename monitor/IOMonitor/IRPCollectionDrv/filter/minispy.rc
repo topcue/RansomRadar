@@ -4,7 +4,7 @@
 
 #define VER_FILETYPE    VFT_DRV
 #define VER_FILESUBTYPE VFT2_DRV_SYSTEM
-#define VER_FILEDESCRIPTION_STR     "MiniSpy Filter Driver"
-#define VER_INTERNALNAME_STR        "minispy.sys"
+#define VER_FILEDESCRIPTION_STR     "RansomRadar IRP Filter Driver"
+#define VER_INTERNALNAME_STR        "RansomRadarIrp.sys"
 
 #include "common.ver"

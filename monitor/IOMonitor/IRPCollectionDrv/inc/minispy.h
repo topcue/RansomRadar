@@ -67,7 +67,7 @@ typedef struct _MINISPYVER {
 //  Name of minispy's communication server port
 //
 
-#define MINISPY_PORT_NAME                   L"\\MiniSpyPort"
+#define MINISPY_PORT_NAME                   L"\\RansomRadarIrpPort"
 
 //
 //  Local definitions for passing parameters between the filter and user mode
