@@ -23,6 +23,28 @@ The folder tree for this repository is shown below:
 
 ## Environment Setup
 
+### Automated host/VM setup and build
+
+Run these commands from PowerShell; no Visual Studio GUI interaction is required.
+
+```powershell
+# Diagnose the current machine only.
+.\scripts\check_prerequisites.ps1
+
+# Configure Python/project paths and build PARSER, the Rust helper, and the IRP driver.
+.\scripts\build_all.ps1
+```
+
+For a new VM, copy this repository and the sibling `setup_env` directory, then run an elevated PowerShell session:
+
+```powershell
+.\scripts\bootstrap_host.ps1 -InstallMissing
+# Reboot if requested, then validate and build:
+.\scripts\bootstrap_host.ps1
+```
+
+`bootstrap_host.ps1` delegates to the versioned installers in `setup_env\base`. It does not reboot the machine or load/install the kernel driver automatically. Driver loading and trace collection remain separate steps because they change host security/runtime state.
+
 **Requirement**:
 
 - OS: Windows 10/11, with Windows ADK installed

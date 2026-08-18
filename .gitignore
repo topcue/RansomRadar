@@ -6,10 +6,13 @@ helper/PARSER/PARSER/bin/
 helper/PARSER/PARSER/obj/
 helper/PARSER/packages/
 monitor/IOMonitor/minifilter_helper/target/
+monitor/IOMonitor/IRPCollectionDrv/.vs/
+monitor/IOMonitor/IRPCollectionDrv/filter/x64/
+monitor/IOMonitor/IRPCollectionDrv/filter/ARM64/
+monitor/IOMonitor/IRPCollectionDrv/user/x64/
+monitor/IOMonitor/IRPCollectionDrv/user/ARM64/
 *.csproj.user
+*.vcxproj.user
 *.suo
 *.vsidx
 *.pdb
-
-helper/PARSER/PARSER/bin/
-helper/PARSER/PARSER/obj/
