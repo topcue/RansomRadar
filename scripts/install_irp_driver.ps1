@@ -1,4 +1,7 @@
-param([switch]$EnableTestSigning)
+param(
+    [switch]$EnableTestSigning,
+    [switch]$Replace
+)
 
 $ErrorActionPreference = "Stop"
 $ServiceName = "RansomRadarIrp"
@@ -24,12 +27,17 @@ if ($EnableTestSigning) {
     return
 }
 
+& sc.exe query $ServiceName *> $null
+if ($LASTEXITCODE -eq 0) {
+    if (-not $Replace) { throw "Service already exists: $ServiceName. Use -Replace after rebuilding." }
+    & fltmc.exe unload $ServiceName 2>$null
+    & sc.exe delete $ServiceName | Out-Null
+    Start-Sleep -Seconds 1
+}
+
 Import-Certificate -FilePath $Certificate -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
 Import-Certificate -FilePath $Certificate -CertStoreLocation Cert:\LocalMachine\TrustedPublisher | Out-Null
 Copy-Item -LiteralPath $SourceDriver -Destination $InstalledDriver -Force
-
-& sc.exe query $ServiceName *> $null
-if ($LASTEXITCODE -eq 0) { throw "Service already exists: $ServiceName" }
 
 & sc.exe create $ServiceName type= filesys start= demand binPath= "\SystemRoot\System32\drivers\RansomRadarIrp.sys" DisplayName= "RansomRadar IRP Monitor"
 if ($LASTEXITCODE -ne 0) { throw "Failed to create service: $ServiceName" }

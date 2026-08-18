@@ -927,7 +927,7 @@ VOID WriteToLog(PCFLT_RELATED_OBJECTS FltObjects, char* Buffer, UINT64 BufferSiz
 	UNICODE_STRING     OutPathW;
 	OBJECT_ATTRIBUTES  objAttr;
 
-	RtlInitUnicodeString(&OutPathW, L"\\DosDevices\\C:\\WINDOWS\\log.txt");
+	RtlInitUnicodeString(&OutPathW, L"\\DosDevices\\C:\\Windows\\Temp\\RansomRadarIrp.irp.tsv");
 
 	InitializeObjectAttributes(&objAttr, &OutPathW,
 		OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE,

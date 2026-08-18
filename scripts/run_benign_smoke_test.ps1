@@ -11,49 +11,42 @@ $OutputDir = Join-Path $RunRoot "output"
 $WorkDir = Join-Path $RunRoot "work"
 $CopiedWorkload = Join-Path $InputDir "benign_01_dotnet_build.ps1"
 $WprProfile = Join-Path $RepoRoot "monitor\record.wprp"
-$ControlExe = Join-Path $RepoRoot "monitor\IOMonitor\IRPCollectionDrv\user\x64\Debug\minispy.exe"
-$IrpLog = Join-Path $OutputDir "benign_01_dotnet_build.irp.txt"
+$DriverLog = Join-Path $env:SystemRoot "Temp\RansomRadarIrp.irp.tsv"
+$IrpLog = Join-Path $OutputDir "benign_01_dotnet_build.irp.tsv"
 $EtlPath = Join-Path $OutputDir "benign_01_dotnet_build.etl"
 
 if (-not (Test-Path -LiteralPath $WorkloadSource)) { throw "Benign workload not found: $WorkloadSource" }
-if (-not (Test-Path -LiteralPath $ControlExe)) { throw "IRP control executable not found: $ControlExe" }
 if (-not (Get-Service -Name RansomRadarIrp -ErrorAction SilentlyContinue)) { throw "RansomRadarIrp is not installed." }
 
 New-Item -ItemType Directory -Force -Path $InputDir, $OutputDir, $WorkDir | Out-Null
 Copy-Item -LiteralPath $WorkloadSource -Destination $CopiedWorkload -Force
 
-$Process = $null
 $WprStarted = $false
+$Attached = $false
 try {
-    & fltmc.exe load RansomRadarIrp 2>$null
+    $DriverService = Get-Service -Name RansomRadarIrp
+    if ($DriverService.Status -ne 'Running') {
+        & fltmc.exe load RansomRadarIrp
+        if ($LASTEXITCODE -ne 0) { throw "Failed to load RansomRadarIrp." }
+    }
+    & fltmc.exe attach RansomRadarIrp C:
+    if ($LASTEXITCODE -ne 0) { throw "Failed to attach RansomRadarIrp to C:." }
+    $Attached = $true
+    if (Test-Path -LiteralPath $DriverLog) { Remove-Item -LiteralPath $DriverLog -Force }
     & wpr.exe -start "$WprProfile!PMC" -filemode
     if ($LASTEXITCODE -ne 0) { throw "WPR failed to start." }
     $WprStarted = $true
-
-    $StartInfo = [Diagnostics.ProcessStartInfo]::new()
-    $StartInfo.FileName = $ControlExe
-    $StartInfo.Arguments = "/a C: /f `"$IrpLog`" /s"
-    $StartInfo.UseShellExecute = $false
-    $StartInfo.RedirectStandardInput = $true
-    $StartInfo.RedirectStandardOutput = $true
-    $StartInfo.RedirectStandardError = $true
-    $StartInfo.CreateNoWindow = $true
-    $Process = [Diagnostics.Process]::Start($StartInfo)
-    Start-Sleep -Seconds 2
-    if ($Process.HasExited) { throw "IRP control process exited before the workload: $($Process.StandardError.ReadToEnd())" }
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $CopiedWorkload -WorkRoot $WorkDir
     if ($LASTEXITCODE -ne 0) { throw "Benign workload failed with exit code $LASTEXITCODE." }
 } finally {
     if ($WprStarted) { & wpr.exe -stop $EtlPath | Out-Host }
-    if ($Process -and -not $Process.HasExited) {
-        $Process.StandardInput.Close()
-        if (-not $Process.WaitForExit(15000)) { $Process.Kill() }
-    }
+    if ($Attached) { & fltmc.exe detach RansomRadarIrp C: 2>$null }
 }
 
 if (-not (Test-Path -LiteralPath $EtlPath)) { throw "ETL output was not created: $EtlPath" }
-if (-not (Test-Path -LiteralPath $IrpLog)) { throw "IRP output was not created: $IrpLog" }
+if (-not (Test-Path -LiteralPath $DriverLog)) { throw "IRP output was not created: $DriverLog" }
+Move-Item -LiteralPath $DriverLog -Destination $IrpLog -Force
 Write-Output "Benign smoke test complete."
 Write-Output "Copied workload: $CopiedWorkload"
 Write-Output "HPC ETL: $EtlPath"
